@@ -1,4 +1,4 @@
-package com.example.facerecognitionsystemapplication.ui.face_capture
+package com.example.person_recognition_system.ui.face_capture
 
 import android.content.ContentValues.TAG
 import android.os.Bundle
@@ -15,7 +15,7 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import com.example.facerecognitionsystemapplication.databinding.FragmentFaceCaptureBinding
+import com.example.person_recognition_system.databinding.FragmentFaceCaptureBinding
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 

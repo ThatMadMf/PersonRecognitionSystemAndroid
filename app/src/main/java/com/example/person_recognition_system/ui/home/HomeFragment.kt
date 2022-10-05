@@ -1,4 +1,4 @@
-package com.example.facerecognitionsystemapplication.ui.home
+package com.example.person_recognition_system.ui.home
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -8,8 +8,8 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
-import com.example.facerecognitionsystemapplication.R
-import com.example.facerecognitionsystemapplication.databinding.FragmentHomeBinding
+import com.example.person_recognition_system.R
+import com.example.person_recognition_system.databinding.FragmentHomeBinding
 
 class HomeFragment : Fragment() {
 
