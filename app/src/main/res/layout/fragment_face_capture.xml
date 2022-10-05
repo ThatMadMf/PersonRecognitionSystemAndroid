@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:background="?attr/fullscreenBackgroundColor"
     android:orientation="vertical"
-    android:theme="@style/ThemeOverlay.FaceRecognitionSystemApplication.FullscreenContainer"
+    android:theme="@style/ThemeOverlay.PersonRecognitionSystem.FullscreenContainer"
     tools:context=".ui.face_capture.FaceCapture">
 
     <!-- The primary full-screen view. This can be replaced with whatever view
@@ -26,7 +26,7 @@
 
         <LinearLayout
             android:id="@+id/fullscreen_content_controls"
-            style="@style/Widget.Theme.FaceRecognitionSystemApplication.ButtonBar.Fullscreen"
+            style="@style/Widget.Theme.PersonRecognitionSystem.ButtonBar.Fullscreen"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|center_horizontal"
