@@ -1,6 +1,8 @@
 package com.example.person_recognition_system.ui.face_capture
 
 import android.content.ContentValues.TAG
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
@@ -8,14 +10,17 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
-import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.Preview
+import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.person_recognition_system.databinding.FragmentFaceCaptureBinding
+import com.example.person_recognition_system.dtos.PhotoSocketEvent
+import com.example.person_recognition_system.services.SocketClient
+import com.google.gson.Gson
+import java.io.ByteArrayOutputStream
+import java.net.URI
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -24,11 +29,28 @@ import java.util.concurrent.Executors
  * An example full-screen fragment that shows and hides the system UI (i.e.
  * status bar and navigation/system bar) with user interaction.
  */
+@Suppress("DEPRECATION")
 class FaceCapture : Fragment() {
 
     private val hideHandler = Handler()
 
     @Suppress("InlinedApi")
+    private var capturedImageByteArray: ByteArray? = null
+    private var imageCapture: ImageCapture? = null
+
+    private var visible: Boolean = false
+    private var fullscreenContent: View? = null
+    private var fullscreenContentControls: View? = null
+
+    private var _binding: FragmentFaceCaptureBinding? = null
+    private lateinit var cameraExecutor: ExecutorService
+    private lateinit var socketClient: SocketClient
+
+    // This property is only valid between onCreateView and
+    // onDestroyView.
+    private val binding get() = _binding!!
+
+
     private val hidePart2Runnable = Runnable {
         // Delayed removal of status and navigation bar
 
@@ -49,75 +71,93 @@ class FaceCapture : Fragment() {
         // Delayed display of UI elements
         fullscreenContentControls?.visibility = View.VISIBLE
     }
-    private var visible: Boolean = false
     private val hideRunnable = Runnable { hide() }
 
-    /**
-     * Touch listener to use for in-layout UI controls to delay hiding the
-     * system UI. This is to prevent the jarring behavior of controls going away
-     * while interacting with activity UI.
-     */
-    private val delayHideTouchListener = View.OnTouchListener { _, _ ->
-        if (AUTO_HIDE) {
-            delayedHide(AUTO_HIDE_DELAY_MILLIS)
+    private val callback = object : ImageCapture.OnImageCapturedCallback() {
+        override fun onError(exc: ImageCaptureException) {
+            Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
         }
-        false
+
+        override fun onCaptureSuccess(image: ImageProxy) {
+            Log.i(TAG, "Image captured")
+            val stream = ByteArrayOutputStream()
+            image.convertImageProxyToBitmap().compress(Bitmap.CompressFormat.PNG, 10, stream)
+            capturedImageByteArray = stream.toByteArray()
+            image.close()
+        }
     }
 
-    private var dummyButton: Button? = null
-    private var fullscreenContent: View? = null
-    private var fullscreenContentControls: View? = null
+    private val socketClientRunnable = object : Runnable {
+        override fun run() {
+            try {
+                if (capturedImageByteArray == null) {
+                    Log.i(TAG, "No image found")
+                } else {
+                    imageCapture!!.takePicture(
+                        ContextCompat.getMainExecutor(activity!!),
+                        callback,
+                    )
 
-    private var _binding: FragmentFaceCaptureBinding? = null
-    private lateinit var cameraExecutor: ExecutorService
+                    Log.i(TAG, "Sending event")
+                    socketClient.send(
+                        Gson().toJson(
+                            PhotoSocketEvent(
+                                "test",
+                                capturedImageByteArray!!,
+                            )
+                        )
+                    )
+                }
 
-    // This property is only valid between onCreateView and
-    // onDestroyView.
-    private val binding get() = _binding!!
+            } catch (e: Exception) {
+                Log.e(TAG, e.message!!)
+            } finally {
+                //also call the same runnable to call it at regular interval
+                hideHandler.postDelayed(this, 1000)
+            }
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        startCamera()
+
+        cameraExecutor = Executors.newSingleThreadExecutor()
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
 
         _binding = FragmentFaceCaptureBinding.inflate(inflater, container, false)
         return binding.root
-
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         visible = true
 
-        dummyButton = binding.dummyButton
-        fullscreenContentControls = binding.fullscreenContentControls
-        // Set up the user interaction to manually show or hide the system UI.
         fullscreenContent?.setOnClickListener { toggle() }
-
-        // Upon interacting with UI controls, delay any scheduled hide()
-        // operations to prevent the jarring behavior of controls going away
-        // while interacting with the UI.
-        dummyButton?.setOnTouchListener(delayHideTouchListener)
-
-        cameraExecutor = Executors.newSingleThreadExecutor()
 
         activity!!.window.setFlags(
             WindowManager.LayoutParams.FLAG_FULLSCREEN,
             WindowManager.LayoutParams.FLAG_FULLSCREEN
-        );
-
-        startCamera()
+        )
     }
 
     override fun onResume() {
         super.onResume()
+        socketClient = SocketClient(URI("ws://192.168.0.195:5005/"))
+        socketClient.connect()
         activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
 
         // Trigger the initial hide() shortly after the activity has been
         // created, to briefly hint to the user that UI controls
         // are available.
+        hideHandler.post(socketClientRunnable)
         delayedHide(100)
     }
 
@@ -127,14 +167,16 @@ class FaceCapture : Fragment() {
 
         // Clear the systemUiVisibility flag
         activity?.window?.decorView?.systemUiVisibility = 0
+        hideHandler.removeCallbacks(socketClientRunnable)
         show()
+        cameraExecutor.shutdown()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        dummyButton = null
         fullscreenContent = null
         fullscreenContentControls = null
+        cameraExecutor.shutdown()
     }
 
     private fun toggle() {
@@ -179,23 +221,11 @@ class FaceCapture : Fragment() {
     }
 
     companion object {
-        /**
-         * Whether or not the system UI should be auto-hidden after
-         * [AUTO_HIDE_DELAY_MILLIS] milliseconds.
-         */
         private const val AUTO_HIDE = true
-
-        /**
-         * If [AUTO_HIDE] is set, the number of milliseconds to wait after
-         * user interaction before hiding the system UI.
-         */
         private const val AUTO_HIDE_DELAY_MILLIS = 3000
-
-        /**
-         * Some older devices needs a small delay between UI widget updates
-         * and a change of the status and navigation bar.
-         */
         private const val UI_ANIMATION_DELAY = 300
+        private const val RATIO_4_3_VALUE = 4.0 / 3.0
+        private const val RATIO_16_9_VALUE = 16.0 / 9.0
     }
 
     override fun onDestroyView() {
@@ -217,6 +247,8 @@ class FaceCapture : Fragment() {
                     it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
                 }
 
+            imageCapture = ImageCapture.Builder().build()
+
             // Select back camera as a default
             val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
 
@@ -226,13 +258,28 @@ class FaceCapture : Fragment() {
 
                 // Bind use cases to camera
                 cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview
+                    viewLifecycleOwner,
+                    cameraSelector,
+                    preview,
+                    imageCapture,
                 )
 
+                imageCapture?.takePicture(
+                    ContextCompat.getMainExecutor(activity!!),
+                    callback,
+                )
             } catch (exc: Exception) {
                 Log.e(TAG, "Use case binding failed", exc)
             }
 
         }, ContextCompat.getMainExecutor(activity!!))
+    }
+
+    fun ImageProxy.convertImageProxyToBitmap(): Bitmap {
+        val buffer = planes[0].buffer
+        buffer.rewind()
+        val bytes = ByteArray(buffer.capacity())
+        buffer.get(bytes)
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
     }
 }
