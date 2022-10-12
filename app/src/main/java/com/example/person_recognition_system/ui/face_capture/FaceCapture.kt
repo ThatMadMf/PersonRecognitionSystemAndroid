@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.os.Handler
+import android.util.Base64
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -81,7 +82,7 @@ class FaceCapture : Fragment() {
         override fun onCaptureSuccess(image: ImageProxy) {
             Log.i(TAG, "Image captured")
             val stream = ByteArrayOutputStream()
-            image.convertImageProxyToBitmap().compress(Bitmap.CompressFormat.PNG, 10, stream)
+            image.convertImageProxyToBitmap().compress(Bitmap.CompressFormat.JPEG, 10, stream)
             capturedImageByteArray = stream.toByteArray()
             image.close()
         }
@@ -102,8 +103,8 @@ class FaceCapture : Fragment() {
                     socketClient.send(
                         Gson().toJson(
                             PhotoSocketEvent(
-                                "test",
-                                capturedImageByteArray!!,
+                                "face-capture-frame",
+                                Base64.encodeToString(capturedImageByteArray!!, Base64.DEFAULT),
                             )
                         )
                     )
