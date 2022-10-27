@@ -16,6 +16,7 @@ import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import com.example.person_recognition_system.MainActivity.Companion.socketClient
 import com.example.person_recognition_system.databinding.FragmentFaceCaptureBinding
 import com.example.person_recognition_system.dtos.PhotoSocketEvent
 import com.example.person_recognition_system.services.SocketClient
@@ -45,19 +46,12 @@ class FaceCapture : Fragment() {
 
     private var _binding: FragmentFaceCaptureBinding? = null
     private lateinit var cameraExecutor: ExecutorService
-    private lateinit var socketClient: SocketClient
+//    private lateinit var socketClient: SocketClient
 
-    // This property is only valid between onCreateView and
-    // onDestroyView.
     private val binding get() = _binding!!
 
 
     private val hidePart2Runnable = Runnable {
-        // Delayed removal of status and navigation bar
-
-        // Note that some of these constants are new as of API 16 (Jelly Bean)
-        // and API 19 (KitKat). It is safe to use them, as they are inlined
-        // at compile-time and do nothing on earlier devices.
         val flags =
             View.SYSTEM_UI_FLAG_LOW_PROFILE or
                     View.SYSTEM_UI_FLAG_FULLSCREEN or
@@ -100,7 +94,7 @@ class FaceCapture : Fragment() {
                     )
 
                     Log.i(TAG, "Sending event")
-                    socketClient.send(
+                    socketClient!!.send(
                         Gson().toJson(
                             PhotoSocketEvent(
                                 "face-capture-frame",
@@ -151,8 +145,6 @@ class FaceCapture : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        socketClient = SocketClient(URI("ws://192.168.0.195:5005/"))
-        socketClient.connect()
         activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
 
         // Trigger the initial hide() shortly after the activity has been
@@ -276,7 +268,7 @@ class FaceCapture : Fragment() {
         }, ContextCompat.getMainExecutor(activity!!))
     }
 
-    fun ImageProxy.convertImageProxyToBitmap(): Bitmap {
+    private fun ImageProxy.convertImageProxyToBitmap(): Bitmap {
         val buffer = planes[0].buffer
         buffer.rewind()
         val bytes = ByteArray(buffer.capacity())
