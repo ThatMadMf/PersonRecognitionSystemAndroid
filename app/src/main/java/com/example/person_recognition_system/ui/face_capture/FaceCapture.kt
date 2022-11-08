@@ -3,6 +3,7 @@ package com.example.person_recognition_system.ui.face_capture
 import android.content.ContentValues.TAG
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.os.Bundle
 import android.os.Handler
 import android.util.Base64
@@ -73,7 +74,8 @@ class FaceCapture : Fragment() {
         override fun onCaptureSuccess(image: ImageProxy) {
             Log.i(TAG, "Image captured")
             val stream = ByteArrayOutputStream()
-            image.convertImageProxyToBitmap().compress(Bitmap.CompressFormat.JPEG, 10, stream)
+            image.convertImageProxyToBitmap().rotate()
+                .compress(Bitmap.CompressFormat.JPEG, 10, stream)
             capturedImageByteArray = stream.toByteArray()
             image.close()
         }
@@ -268,4 +270,14 @@ class FaceCapture : Fragment() {
         buffer.get(bytes)
         return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
     }
+
+    private fun Bitmap.rotate(degrees: Float = -90.0f): Bitmap = Bitmap.createBitmap(
+        this,
+        0,
+        0,
+        width,
+        height,
+        Matrix().apply { postRotate(degrees) },
+        true,
+    )
 }
