@@ -74,7 +74,7 @@ class FaceCapture : Fragment() {
         override fun onCaptureSuccess(image: ImageProxy) {
             Log.i(TAG, "Image captured")
             val stream = ByteArrayOutputStream()
-            image.convertImageProxyToBitmap().rotate()
+            image.convertImageProxyToBitmap().resize().rotate()
                 .compress(Bitmap.CompressFormat.JPEG, 10, stream)
             capturedImageByteArray = stream.toByteArray()
             image.close()
@@ -280,4 +280,8 @@ class FaceCapture : Fragment() {
         Matrix().apply { postRotate(degrees) },
         true,
     )
+
+    fun Bitmap.resize(): Bitmap {
+        return Bitmap.createScaledBitmap(this, 480, 640, false)
+    }
 }
