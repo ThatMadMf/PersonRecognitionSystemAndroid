@@ -19,10 +19,7 @@ import androidx.fragment.app.Fragment
 import com.example.person_recognition_system.MainActivity.Companion.socketClient
 import com.example.person_recognition_system.databinding.FragmentFaceCaptureBinding
 import com.example.person_recognition_system.dtos.PhotoSocketEvent
-import com.example.person_recognition_system.services.SocketClient
-import com.google.gson.Gson
 import java.io.ByteArrayOutputStream
-import java.net.URI
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -93,13 +90,9 @@ class FaceCapture : Fragment() {
                         callback,
                     )
 
-                    Log.i(TAG, "Sending event")
-                    socketClient!!.send(
-                        Gson().toJson(
-                            PhotoSocketEvent(
-                                "face-capture-frame",
-                                Base64.encodeToString(capturedImageByteArray!!, Base64.DEFAULT),
-                            )
+                    socketClient!!.sendFaceCaptureFrame(
+                        PhotoSocketEvent(
+                            Base64.encodeToString(capturedImageByteArray!!, Base64.DEFAULT),
                         )
                     )
                 }
