@@ -75,7 +75,7 @@ class FaceCapture : Fragment() {
             Log.i(TAG, "Image captured")
             val stream = ByteArrayOutputStream()
             image.convertImageProxyToBitmap().resize().rotate()
-                .compress(Bitmap.CompressFormat.JPEG, 10, stream)
+                .compress(Bitmap.CompressFormat.JPEG, 50, stream)
             capturedImageByteArray = stream.toByteArray()
             image.close()
         }
@@ -100,10 +100,10 @@ class FaceCapture : Fragment() {
                 }
 
             } catch (e: Exception) {
-                Log.e(TAG, e.message!!)
+                Log.e(tag, e.message!!)
             } finally {
                 //also call the same runnable to call it at regular interval
-                hideHandler.postDelayed(this, 1000)
+                hideHandler.postDelayed(this, 500)
             }
         }
     }
@@ -282,6 +282,6 @@ class FaceCapture : Fragment() {
     )
 
     fun Bitmap.resize(): Bitmap {
-        return Bitmap.createScaledBitmap(this, 480, 640, false)
+        return Bitmap.createScaledBitmap(this, 960, 720, false)
     }
 }

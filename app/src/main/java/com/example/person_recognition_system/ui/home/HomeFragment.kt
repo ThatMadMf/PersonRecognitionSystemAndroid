@@ -5,12 +5,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.findNavController
 import com.example.person_recognition_system.R
 import com.example.person_recognition_system.databinding.FragmentHomeBinding
-import com.example.person_recognition_system.ui.face_capture.FaceCapture
 
 class HomeFragment : Fragment() {
 
@@ -40,13 +39,8 @@ class HomeFragment : Fragment() {
         val button = view.findViewById(R.id.start_face_recognition_button) as ImageButton
 
         button.setOnClickListener {
-            activity!!.supportFragmentManager.beginTransaction().replace(
-                R.id.nav_host_fragment_activity_main,
-                FaceCapture(),
-                R.id.face_capture.toString(),
-            ).commit()
-
-            Toast.makeText(activity, "click", 5).show()
+            activity!!.findNavController(R.id.nav_host_fragment_activity_main)
+                .navigate(R.id.face_capture)
         }
     }
 

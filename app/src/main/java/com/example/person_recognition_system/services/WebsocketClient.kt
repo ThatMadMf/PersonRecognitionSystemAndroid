@@ -5,6 +5,10 @@ import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
+import com.example.person_recognition_system.MainActivity.Companion.authToken
+import com.example.person_recognition_system.MainActivity.Companion.deviceId
+import com.example.person_recognition_system.MainActivity.Companion.serverURI
+import com.example.person_recognition_system.MainActivity.Companion.token
 import com.example.person_recognition_system.dtos.DeviceAuthorizationEvent
 import com.example.person_recognition_system.dtos.EventResponse
 import com.example.person_recognition_system.dtos.PhotoSocketEvent
@@ -12,50 +16,63 @@ import com.example.person_recognition_system.dtos.SocketEvent
 import com.google.gson.Gson
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
-import java.net.URI
 import java.util.*
 
 
-class WebsocketClient(
-    private val serverURI: URI?,
-    private var deviceId: String,
-    private var authToken: String,
-) : Service() {
-    private val tag = "Socket client"
-
-    private val cc = object: WebSocketClient(serverURI) {
-        override fun onOpen(handshakedata: ServerHandshake) {
-            this@WebsocketClient.sendAuthorizeDevice(
-                DeviceAuthorizationEvent(
-                    this@WebsocketClient.deviceId,
-                    this@WebsocketClient.authToken,
+class WebsocketClient : Service {
+    constructor() : super() {
+        this.cc = object : WebSocketClient(serverURI) {
+            override fun onOpen(handshakedata: ServerHandshake) {
+                this@WebsocketClient.sendAuthorizeDevice(
+                    DeviceAuthorizationEvent(
+                        deviceId!!,
+                        authToken,
+                    )
                 )
-            )
-        }
-
-        override fun onMessage(message: String) {
-            val event = Gson().fromJson(message, EventResponse::class.java)
-
-            when (event.command) {
-                authorizeDeviceEvent ->
-                    if (event.result == "success") {
-                        serviceCallbacks!!.authorizationSuccess()
-                    } else {
-                        serviceCallbacks!!.authorizationFailure()
-                    }
             }
-        }
 
-        override fun onClose(code: Int, reason: String, remote: Boolean) {
-            Log.w(tag, "Connection closed $reason")
-        }
+            override fun onMessage(message: String) {
+                val event = Gson().fromJson(message, EventResponse::class.java)
 
-        override fun onError(ex: Exception) {
-            Log.w(tag, "Socket error: " + ex.message)
+                if (serviceCallbacks == null) {
+                    Log.i(tag, "Callbacks are null")
+
+                    return
+                }
+
+                when (event.command) {
+                    authorizeDeviceEvent ->
+                        if (event.result == "success") {
+                            serviceCallbacks!!.deviceAuthorizationSuccess()
+                        } else {
+                            serviceCallbacks!!.deviceAuthorizationFailure()
+                        }
+                    authorizationResultEvent ->
+                        if (event.result == "success") {
+                            token = event.data["token"]
+                            serviceCallbacks!!.authorizationSuccess()
+                        } else {
+                            serviceCallbacks!!.authorizationFailure()
+                        }
+                }
+            }
+
+            override fun onClose(code: Int, reason: String, remote: Boolean) {
+                Log.w(tag, "Connection closed $reason")
+            }
+
+            override fun onError(ex: Exception) {
+                Log.w(tag, "Socket error: " + ex.message)
+            }
         }
     }
 
+    private val tag = "Socket client"
+
+    private var cc: WebSocketClient? = null
+
     private val authorizeDeviceEvent = "authorize-device"
+    private val authorizationResultEvent = "authorization-result"
 
     // Binder given to clients
     private val binder: IBinder = LocalBinder()
@@ -71,12 +88,16 @@ class WebsocketClient(
         }
     }
 
+    override fun onBind(intent: Intent?): IBinder {
+        return binder
+    }
+
     fun setCallbacks(callbacks: SocketClientCallbacks?) {
         serviceCallbacks = callbacks
     }
 
     fun connect() {
-       cc.connect()
+        cc!!.connect()
     }
 
     fun sendFaceCaptureFrame(eventData: PhotoSocketEvent) {
@@ -92,18 +113,14 @@ class WebsocketClient(
     }
 
     private fun sendEvent(command: String, data: Any) {
-        if (!cc.isOpen) {
+        if (!cc!!.isOpen) {
             Log.i(tag, "Could not send event: connection is not open")
         }
 
         try {
-            cc.send(Gson().toJson(SocketEvent(command, data, UUID.randomUUID())))
+            cc!!.send(Gson().toJson(SocketEvent(command, data, UUID.randomUUID())))
         } catch (e: Exception) {
             Log.i(tag, "Could not send event: " + e.message)
         }
-    }
-
-    override fun onBind(intent: Intent?): IBinder? {
-        return binder
     }
 }

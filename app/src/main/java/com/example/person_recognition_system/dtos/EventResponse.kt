@@ -2,4 +2,9 @@ package com.example.person_recognition_system.dtos
 
 import java.util.*
 
-data class EventResponse(val uuid: UUID, val command: String, val result: String)
+data class EventResponse(
+    val uuid: UUID,
+    val command: String,
+    val result: String,
+    val data: Map<String, String>
+)
