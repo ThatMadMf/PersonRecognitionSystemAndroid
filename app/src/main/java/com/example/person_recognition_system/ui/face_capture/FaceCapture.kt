@@ -12,12 +12,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.widget.ImageButton
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.person_recognition_system.MainActivity.Companion.socketClient
+import com.example.person_recognition_system.R
 import com.example.person_recognition_system.databinding.FragmentFaceCaptureBinding
 import com.example.person_recognition_system.dtos.PhotoSocketEvent
 import java.io.ByteArrayOutputStream
@@ -44,7 +46,6 @@ class FaceCapture : Fragment() {
 
     private var _binding: FragmentFaceCaptureBinding? = null
     private lateinit var cameraExecutor: ExecutorService
-//    private lateinit var socketClient: SocketClient
 
     private val binding get() = _binding!!
 
@@ -75,7 +76,7 @@ class FaceCapture : Fragment() {
             Log.i(TAG, "Image captured")
             val stream = ByteArrayOutputStream()
             image.convertImageProxyToBitmap().resize().rotate()
-                .compress(Bitmap.CompressFormat.JPEG, 50, stream)
+                .compress(Bitmap.CompressFormat.JPEG, 100, stream)
             capturedImageByteArray = stream.toByteArray()
             image.close()
         }
@@ -136,6 +137,12 @@ class FaceCapture : Fragment() {
             WindowManager.LayoutParams.FLAG_FULLSCREEN,
             WindowManager.LayoutParams.FLAG_FULLSCREEN
         )
+
+        val button = view.findViewById(R.id.start_capture_session_button) as ImageButton
+
+        button.setOnClickListener {
+            socketClient!!.startCaptureSession()
+        }
     }
 
     override fun onResume() {

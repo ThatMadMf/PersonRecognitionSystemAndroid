@@ -100,6 +100,12 @@ class WebsocketClient : Service {
         cc!!.connect()
     }
 
+    fun startCaptureSession() {
+        Log.i(tag, "Sending start-capture-session event")
+
+        this.sendEvent("start-capture-session", "")
+    }
+
     fun sendFaceCaptureFrame(eventData: PhotoSocketEvent) {
         Log.i(tag, "Sending face-capture-frame event")
 
