@@ -132,7 +132,7 @@ class MainActivity : AppCompatActivity(), SocketClientCallbacks {
     companion object {
         var socketClient: WebsocketClient? = null
         var token: String? = null
-        val serverURI = URI("ws://192.168.0.195:5005/")
+        val serverURI = URI("wss://onoshkomax.pp.ua/socket")
         var deviceId: String? = null
         val authToken = "808de751-ee7b-4006-bc93-24b45f82ea42"
         private const val REQUEST_CODE_PERMISSIONS = 10

@@ -13,6 +13,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.ImageButton
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -142,6 +143,8 @@ class FaceCapture : Fragment() {
 
         button.setOnClickListener {
             socketClient!!.startCaptureSession()
+            button.visibility = View.GONE
+            Toast.makeText(activity, "Capture session started", 3).show()
         }
     }
 

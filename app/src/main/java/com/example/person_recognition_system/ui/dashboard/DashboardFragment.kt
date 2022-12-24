@@ -61,7 +61,7 @@ class DashboardFragment : Fragment() {
 
     private fun getUserInfo() {
         val request = Request.Builder()
-            .url("https://8b5f-194-146-190-152.ngrok.io/api/me")
+            .url("https://onoshkomax.pp.ua/server/api/me")
 //            .url("http://192.168.0.195:8000/api/me")
             .addHeader("Authorization", "Bearer $token")
             .addHeader("Accept", "*/*")
